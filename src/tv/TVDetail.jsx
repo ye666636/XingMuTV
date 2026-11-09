@@ -49,6 +49,7 @@ export default function TVDetail({ item, onClose, onPlay }) {
 
   useEffect(() => {
     const onKeyDown = (event) => {
+      if (document.body.classList.contains('tv-update-open')) return; // 更新弹窗优先接管遥控器
       event.stopPropagation();
       const { key } = event;
       const eps = detailRef.current?.episodes || [];

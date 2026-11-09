@@ -43,16 +43,16 @@ await build({
   logLevel: 'info',
 });
 
-// bridge.js 必须是普通脚本，并且先于应用 bundle 执行（React 一挂载就会读 electronAPI）。
+// bridge.js 必须是普通脚本、先于应用 bundle 执行（React 一挂载就读 electronAPI），
+// 且要放在 viewport meta 之后，才能按电视/手机改写 viewport。
 const indexPath = path.join(assets, 'index.html');
 let html = fs.readFileSync(indexPath, 'utf8');
 if (!html.includes('bridge.js')) {
-  html = html.replace('<head>', '<head>\n    <script src="bridge.js"></script>');
+  html = html.replace('</head>', '    <script src="bridge.js"></script>\n  </head>');
 }
-// 安卓版封面图、图片资源直连官网 https；桌面版原本只放行自定义协议。
+// 安卓版封面图、图片资源直连官网 https。
 html = html.replace(/connect-src 'self'[^"]*/, "connect-src 'self' https: http: hongguo-stream: hongguo-local:");
-// 电视是 1080p/4K 大屏，按手机式的 device-width 渲染会让界面被放大得一塌糊涂，
-// 这里固定 1600 CSS 宽度，由 WebView 等比缩放到整屏。
+// 默认值给电视（1600 CSS 宽度）；bridge.js 加载时按 isTv() 决定，手机改成 device-width。
 html = html.replace(/<meta\s+name="viewport"[^>]*>/, '<meta name="viewport" content="width=1600" />');
 fs.writeFileSync(indexPath, html, 'utf8');
 console.log('完成：', assets);

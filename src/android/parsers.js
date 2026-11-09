@@ -1,8 +1,7 @@
 /**
  * 星幕剧场 Android TV 版：官网页面解析器。
  *
- * 这些函数与桌面版 src/native/catalog.js、src/native/hongguo.js、
- * src/native/hongguo-search.js 中的实现保持一致（GPL-3.0，同源项目），
+ * 这些函数源自上游 GPL-3.0 项目的官网解析实现（同源项目），
  * 只保留纯字符串/JSON 解析部分，不依赖 Node 与 Electron，方便在 WebView 里跑。
  */
 

@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Home, Search, Clock, User, Settings } from '../components/icons';
 import Player from '../components/Player';
+import AppUpdateNotice from '../components/AppUpdateNotice';
 import TVHome from './TVHome';
 import TVSearch from './TVSearch';
 import TVHistory from './TVHistory';
@@ -192,6 +193,7 @@ export default function TVApp() {
       {detailItem && (
         <TVDetail item={detailItem} onClose={() => setDetailItem(null)} onPlay={playSeries} />
       )}
+      <AppUpdateNotice tvMode />
     </div>
   );
 }

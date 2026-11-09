@@ -1,3 +1,6 @@
+> **存档说明**：本文件是上游 GPL-3.0 项目的原始 README，仅用于许可合规与溯源。
+> 其中描述的桌面版 / 多端形态与本项目当前形态（仅安卓 APK）无关，请勿作为使用说明。
+
 <p align="center">
   <img src="build/icon.png" alt="红果短剧桌面版图标" width="112" height="112">
 </p>

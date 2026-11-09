@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X } from './icons';
 import './AppUpdateNotice.css';
 
-export default function AppUpdateNotice() {
+export default function AppUpdateNotice({ tvMode = false }) {
   const [release, setRelease] = useState(null);
   const [visible, setVisible] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -19,6 +19,8 @@ export default function AppUpdateNotice() {
   const dismissed = useRef(new Set());
   const checkNow = useRef(null);
   const closedAt = useRef(0);
+  const dialogRef = useRef(null);
+  const focusRef = useRef(0);
 
   useEffect(() => {
     let generation = 0, stateRevision = 0, active = true;
@@ -83,12 +85,21 @@ export default function AppUpdateNotice() {
       if (revision === stateRevision) receiveState({ supported: false, reason: '无法读取应用内更新状态，可前往 GitHub 手动下载。', status: 'idle', percent: 0 });
     });
     check();
-    const timer = setInterval(() => check(), 6 * 60 * 60 * 1000);
+    // 星幕剧场：GitHub 不会主动推送，客户端每 5 分钟轮询一次；窗口重新可见/获得焦点时补查，
+    // 这样在 GitHub 发完新版后最多 5 分钟（切回应用时立即）就能弹出更新卡片。
+    const timer = setInterval(() => check(), 5 * 60 * 1000);
+    const recheck = () => {
+      if (document.visibilityState === 'visible') check();
+    };
+    document.addEventListener('visibilitychange', recheck);
+    window.addEventListener('focus', recheck);
     return () => {
       active = false;
       generation++;
       checkNow.current = null;
       clearInterval(timer);
+      document.removeEventListener('visibilitychange', recheck);
+      window.removeEventListener('focus', recheck);
       window.removeEventListener('hongguo-check-app-update', manualCheck);
       unsubscribeState();
       unsubscribePreference();
@@ -101,6 +112,44 @@ export default function AppUpdateNotice() {
     setVisible(false);
     setError('');
   };
+
+  // TV 遥控器：弹窗出现时接管键盘，方向键切按钮、回车确认、返回键关闭，
+  // 同时挡住 TV 外壳的全局按键处理，避免焦点被导航栏抢走。
+  useEffect(() => {
+    if (!tvMode || !visible) return undefined;
+    document.body.classList.add('tv-update-open');
+    const buttons = () => Array.from(dialogRef.current?.querySelectorAll('.app-update-actions button:not(:disabled)') || []);
+    const paint = () => {
+      const list = buttons();
+      focusRef.current = Math.min(focusRef.current, Math.max(0, list.length - 1));
+      list.forEach((button, i) => button.classList.toggle('is-focus', i === focusRef.current));
+      list[focusRef.current]?.focus({ preventScroll: true });
+    };
+    paint();
+    const onKeyDown = event => {
+      if (event.key === 'Escape' || event.key === 'Backspace') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        close();
+        return;
+      }
+      const list = buttons();
+      if (!list.length || !['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Enter', ' '].includes(event.key)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (event.key === 'Enter' || event.key === ' ') { list[focusRef.current]?.click(); return; }
+      const step = (event.key === 'ArrowRight' || event.key === 'ArrowDown') ? 1 : -1;
+      focusRef.current = (focusRef.current + step + list.length) % list.length;
+      paint();
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => {
+      document.body.classList.remove('tv-update-open');
+      window.removeEventListener('keydown', onKeyDown, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tvMode, visible, state.status, release]);
+
   const act = async kind => {
     if (kind === 'openAppUpdate') {
       if (!enabled.current || openingRelease.current) return;
@@ -140,14 +189,14 @@ export default function AppUpdateNotice() {
   const updateError = error || state.error;
   const percent = Math.max(0, Math.min(100, Math.round(state.percent || 0)));
   const title = checking ? '正在检查更新…' : installing ? '正在重启安装…' : downloaded ? `新版 v${version} 已下载` : downloading ? `正在下载 v${version}` : version ? `发现新版本 v${version}` : '检查更新';
-  return <section className="app-update-notice" role="dialog" aria-label="软件更新" aria-describedby="app-update-description" onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}>
+  return <section className="app-update-notice" ref={dialogRef} role="dialog" aria-label="软件更新" aria-describedby="app-update-description" onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}>
     <button type="button" className="icon-btn app-update-close" aria-label="关闭更新提醒" title="关闭更新提醒" onClick={close}><X size={18} /></button>
     <h2 aria-live="polite">{title}</h2>
-    <p id="app-update-description">{checking ? '正在查询正式新版，请稍候。' : installing ? '应用即将退出并安装新版。' : downloaded ? '点击后退出应用并安装新版。请先完成视频下载、合并或转码；稍后也可在设置中找回此提醒。' : downloading ? '关闭提醒后继续下载。下载完成不会自动安装，可在设置中找回进度。' : version ? (state.supported ? '在应用内下载新版，完成后由你决定何时重启安装。关闭提醒可继续使用当前版本。' : state.reason) : updateError ? '可稍后重新检查。' : '已是最新版本。'}</p>
+    <p id="app-update-description">{checking ? '正在查询正式新版，请稍候。' : installing ? '正在打开系统安装器…' : downloaded ? '新安装包已下载，点击后由系统安装器打开。首次安装需在系统设置里允许「安装未知来源应用」。' : downloading ? '关闭提醒后继续下载，下载完成点「立即安装」。' : version ? '下载新版安装包，完成后由系统安装器打开。关闭提醒可继续使用当前版本。' : updateError ? '可稍后重新检查。' : '已是最新版本。'}</p>
     {downloading && <div className="app-update-progress"><progress max="100" value={percent} aria-label="更新下载进度" /><span>{percent}%</span></div>}
     <div className="app-update-actions">
     {(version || downloaded) && <button type="button" className="btn btn-primary" disabled={busy || !enabled.current} onClick={() => act(downloaded ? 'installAppUpdate' : state.supported ? 'downloadAppUpdate' : 'openAppUpdate')}>
-      {installing ? '正在重启…' : downloading ? '正在下载…' : pending ? '请稍候…' : downloaded ? '重启并安装' : state.supported ? '下载更新' : '前往 GitHub 下载'}
+      {installing ? '正在重启…' : downloading ? '正在下载…' : pending ? '请稍候…' : downloaded ? '立即安装' : state.supported ? '下载更新' : '前往 GitHub 下载'}
     </button>}
     {(!version || updateError) && !busy && <button type="button" className="btn btn-outline" onClick={() => checkNow.current?.(true)}>重新检查</button>}
     {(downloading || state.status === 'checking' || pending && actionPending.current === 'downloadAppUpdate') && <button type="button" className="btn btn-outline" disabled={actionPending.current === 'cancelAppUpdate' || !enabled.current} onClick={() => act('cancelAppUpdate')}>取消下载</button>}

@@ -1,4 +1,4 @@
-// 星幕剧场：界面入口。根组件 Root 负责模式选择页与 TV / 电脑 / 手机三端调度。
+// 星幕剧场：WebView 界面入口，启动即进入唯一的 TV 大屏界面。
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import Root from './Root';

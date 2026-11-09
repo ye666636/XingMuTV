@@ -1,14 +1,33 @@
 /**
  * 星幕剧场 Android TV 版：WebView 侧的 electronAPI 适配层。
  *
- * 桌面版的界面代码只认 window.electronAPI；这里用原生 XM 桥（Java）补齐
- * TV 界面真正用到的那部分能力：目录、搜索、详情、播放、观看记录、账号占位。
+ * TV 界面代码只认 window.electronAPI；这里用原生 XM 桥（Java）补齐
+ * 目录、搜索、详情、播放、观看记录、版本更新等能力。
  * 所有网络请求都走原生 OkHttp，绕开 WebView 的 CORS 限制。
  */
 import {
   SITE, WEB_UA, WEB_REFERER,
   parseCatalog, parseRanking, parseEpisodeList, parseSearchResponse, extractPlayUrl,
 } from './parsers.js';
+
+// 电视与手机共用同一个 APK：电视固定 1600 CSS 宽度（大屏不放大），手机按 device-width 正常排版。
+function applyViewport() {
+  try {
+    const tv = typeof window.XM.isTv === 'function' ? window.XM.isTv() : true;
+    const value = tv ? 'width=1600' : 'width=device-width, initial-scale=1';
+    const metas = document.querySelectorAll('meta[name="viewport"]');
+    if (!metas.length) {
+      const meta = document.createElement('meta');
+      meta.setAttribute('name', 'viewport');
+      meta.setAttribute('content', value);
+      (document.head || document.documentElement).appendChild(meta);
+    } else {
+      metas.forEach(meta => meta.setAttribute('content', value));
+    }
+  } catch (_) { /* 老 WebView 退回 index.html 里的默认值 */ }
+}
+applyViewport();
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyViewport);
 
 const CATEGORIES = [
   { slug: 'real-drama', label: '真人剧' },
@@ -51,6 +70,74 @@ function httpGet(url, extra = {}) {
       reject(error);
     }
   });
+}
+
+/* ===== 版本更新 =====
+   AppUpdateNotice 组件只认 electronAPI 的这一组接口，这里用 GitHub Releases API + 原生下载补齐。
+   GitHub 不会推送，组件本身每 5 分钟轮询一次。 */
+const RELEASE_API = 'https://api.github.com/repos/ye666636/XingMuTV/releases/latest';
+const RELEASE_PAGE = 'https://github.com/ye666636/XingMuTV/releases/latest';
+
+let latestRelease = null;
+let downloadedApk = '';
+let updateState = { supported: true, reason: '', status: 'idle', percent: 0, version: null, error: '' };
+const updateListeners = new Set();
+
+function emitUpdate(patch) {
+  updateState = { ...updateState, ...patch };
+  for (const listener of updateListeners) { try { listener(updateState); } catch (_) { /* 忽略单个监听异常 */ } }
+}
+
+// 原生下载 APK 的进度与结果回调（XmBridge.downloadApk 调用）
+window.__xmDownloadProgress = (percent, status, path, message) => {
+  if (status === 'progress') emitUpdate({ status: 'downloading', percent, error: '' });
+  else if (status === 'done') { downloadedApk = path || ''; emitUpdate({ status: 'downloaded', percent: 100, error: '' }); }
+  else emitUpdate({ status: 'error', percent: 0, error: message || '下载失败，请重试' });
+};
+
+function versionParts(value) {
+  const match = /^(\d+)\.(\d+)(?:\.(\d+))?$/.exec(String(value || ''));
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3] || 0)] : null;
+}
+
+function newerVersion(next, current) {
+  const a = versionParts(next), b = versionParts(current);
+  if (!a || !b) return false;
+  for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] > b[i];
+  return false;
+}
+
+async function fetchLatestRelease() {
+  let data = null;
+  try {
+    const body = await httpGet(RELEASE_API, {
+      'User-Agent': 'XingMuTV-Android-Update-Check',
+      Accept: 'application/vnd.github+json',
+      Referer: RELEASE_PAGE,
+    });
+    data = JSON.parse(body);
+  } catch (_) {
+    // 有些网络/代理会拦 api.github.com（403/504）；GitHub 的 /releases/latest
+    // 会 302 到具体 tag 页面，Java 侧跟随重定向后返回 HTML，从这里解析版本号。
+    const html = await httpGet(RELEASE_PAGE, {
+      'User-Agent': 'XingMuTV-Android-Update-Check',
+      Accept: 'text/html',
+    });
+    const tagMatch = /\/ye666636\/XingMuTV\/releases\/tag\/(v?\d+\.\d+(?:\.\d+)?)/i.exec(html);
+    if (!tagMatch) throw new Error('暂时无法检查更新，请检查网络后重试。');
+    const rawTag = tagMatch[1];
+    const version = rawTag.replace(/^v/, '');
+    data = {
+      tag_name: rawTag, draft: false, prerelease: false,
+      assets: [{ name: 'XingMuTV-tv-' + version + '.apk',
+        browser_download_url: `https://github.com/ye666636/XingMuTV/releases/download/${rawTag}/XingMuTV-tv-${version}.apk` }],
+    };
+  }
+  if (!data || data.draft || data.prerelease) return null;
+  const tag = String(data.tag_name || '').replace(/^v/, '');
+  const apk = (Array.isArray(data.assets) ? data.assets : []).find(item => /\.apk$/i.test(item?.name || ''));
+  if (!newerVersion(tag, window.XM.version()) || !apk?.browser_download_url) return null;
+  return { version: tag, url: apk.browser_download_url, notes: String(data.body || '').slice(0, 500) };
 }
 
 const detailCache = new Map();
@@ -146,6 +233,41 @@ const electronAPI = {
   },
   getWatchHistory: async () => ({ success: true, results: readHistory() }),
   onNavigate: () => () => {},
+
+  // 应用内更新（AppUpdateNotice 组件契约）
+  getAppUpdateState: async () => updateState,
+  onAppUpdateState: listener => { updateListeners.add(listener); return () => updateListeners.delete(listener); },
+  onAppUpdatePreference: () => () => {},
+  checkAppUpdate: async () => {
+    try {
+      latestRelease = await fetchLatestRelease();
+      return { enabled: true, release: latestRelease ? { version: latestRelease.version, url: RELEASE_PAGE } : null, error: '' };
+    } catch (error) {
+      return { enabled: true, release: null, error: error.message || '暂时无法检查更新，请检查网络后重试。' };
+    }
+  },
+  downloadAppUpdate: async () => {
+    if (!latestRelease) return { success: false, error: '更新信息已失效，请重新检查更新。' };
+    if (typeof window.XM.downloadApk !== 'function') return { success: false, error: '当前版本不支持应用内更新' };
+    downloadedApk = '';
+    emitUpdate({ status: 'downloading', version: latestRelease.version, percent: 0, error: '' });
+    window.XM.downloadApk(latestRelease.url, latestRelease.version);
+    return { success: true };
+  },
+  cancelAppUpdate: async () => {
+    window.XM.cancelDownload?.();
+    emitUpdate({ status: 'idle', percent: 0, error: '' });
+    return { success: true };
+  },
+  installAppUpdate: async () => {
+    if (!downloadedApk) return { success: false, error: '请先下载新版安装包。' };
+    window.XM.installApk?.(downloadedApk);
+    return { success: true };
+  },
+  openAppUpdate: async () => {
+    window.XM.openRelease?.(RELEASE_PAGE);
+    return { success: true };
+  },
   // 电视端暂不接入红果账号，账号页给出明确说明而不是报错。
   getAccountStatus: async () => ({ success: true, signedIn: false, account: null, error: '电视版暂不支持红果账号扫码登录' }),
   startAccountLogin: async () => ({ success: false, error: '电视版暂不支持红果账号扫码登录' }),

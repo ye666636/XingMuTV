@@ -1,4 +1,4 @@
-// 红果短剧 6.2：前端构建配置，运行版本由 package.json 提供。
+// 星幕剧场：APK 内 WebView 界面的前端构建配置，版本由 package.json 提供。
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 

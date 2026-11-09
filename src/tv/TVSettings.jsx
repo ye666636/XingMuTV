@@ -9,9 +9,12 @@ export default function TVSettings({ zoneActive, onRequestRail, appInfo }) {
 
   const rows = [
     { id: 'shortcut', title: '遥控器操作', desc: '方向键移动 · 回车确认 · 返回键退出 · ↑ ↓ 切集' },
-    { id: 'version', title: '版本', desc: appInfo?.version ? `v${appInfo.version}` : 'v1.0.0' },
+    { id: 'version', title: '版本', desc: appInfo?.version ? `v${appInfo.version}` : 'v1.0.1' },
+    { id: 'update', title: '检查更新', desc: '立即检查 GitHub 上的新版本 · 后台每 5 分钟自动检查' },
     { id: 'about', title: '关于', desc: '星幕剧场 · 家庭大屏短剧播放器' },
   ];
+
+  const checkUpdate = () => window.dispatchEvent(new Event('hongguo-check-app-update'));
 
   useEffect(() => {
     if (!zoneActive) return undefined;
@@ -20,6 +23,10 @@ export default function TVSettings({ zoneActive, onRequestRail, appInfo }) {
       if (key === 'ArrowUp') { event.preventDefault(); if (indexRef.current === 0) onRequestRail?.(); else setIndex(i => i - 1); }
       else if (key === 'ArrowDown') { event.preventDefault(); setIndex(i => Math.min(i + 1, rows.length - 1)); }
       else if (key === 'ArrowLeft') { event.preventDefault(); onRequestRail?.(); }
+      else if ((key === 'Enter' || key === ' ') && rows[indexRef.current]?.id === 'update') {
+        event.preventDefault();
+        checkUpdate();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -38,8 +45,9 @@ export default function TVSettings({ zoneActive, onRequestRail, appInfo }) {
         {rows.map((row, i) => (
           <li
             key={row.id}
-            className={`tv-settings-row ${zoneActive && index === i ? 'is-focus' : ''}`}
+            className={`tv-settings-row ${zoneActive && index === i ? 'is-focus' : ''} ${row.id === 'update' ? 'is-action' : ''}`}
             onMouseEnter={() => { if (!hoverAllowed()) return; setIndex(i); }}
+            onClick={row.id === 'update' ? checkUpdate : undefined}
           >
             <span className="tv-settings-title">{row.title}</span>
             <span className="tv-settings-desc">{row.desc}</span>

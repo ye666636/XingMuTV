@@ -1,12 +1,7 @@
-// 星幕剧场：单一形态应用（TV 版）。启动即进入大屏界面。
-import React, { useEffect } from 'react';
+// 星幕剧场：唯一形态就是 TV 大屏界面（安卓电视 / 手机 APK 的 WebView 入口）。
+import React from 'react';
 import TVApp from './tv/TVApp';
 
 export default function Root() {
-  // TV 版需要最大化窗口。
-  useEffect(() => {
-    window.electronAPI?.setDisplayMode?.('tv')?.catch?.(() => {});
-  }, []);
-
   return <TVApp />;
 }

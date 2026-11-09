@@ -4,6 +4,8 @@
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <!-- Android 8+ 应用内触发安装需要声明；不申请存储权限，APK 只写自己的外部私有目录 -->
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
   <uses-feature android:name="android.software.leanback" android:required="false" />
   <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
@@ -20,12 +22,17 @@
     android:hardwareAccelerated="true"
     android:theme="@style/XingmuTheme">
 
+    <provider
+      android:name=".ApkProvider"
+      android:authorities="${applicationId}.apkprovider"
+      android:exported="false"
+      android:grantUriPermissions="true" />
+
     <activity
       android:name=".MainActivity"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
       android:exported="true"
-      android:launchMode="singleTask"
-      android:screenOrientation="landscape">
+      android:launchMode="singleTask">
 
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
@@ -38,7 +45,6 @@
       android:name=".PlayerActivity"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
       android:exported="false"
-      android:screenOrientation="landscape"
       android:theme="@style/XingmuPlayerTheme" />
   </application>
 </manifest>

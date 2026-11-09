@@ -1,5 +1,5 @@
 // 星幕剧场 TV 版：红果账号。扫码登录、APP 观看记录同步、退出登录。
-// 登录接口与电脑版一致（getAccountStatus / startAccountLogin / pollAccountLogin / getAccountHistory …）。
+// 账号接口预留（getAccountStatus / startAccountLogin / pollAccountLogin / getAccountHistory …）。
 import React, { useEffect, useRef, useState } from 'react';
 import { User, RefreshCw, ChevronRight } from '../components/icons';
 import { hoverAllowed } from './focusGuard';

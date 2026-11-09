@@ -777,6 +777,60 @@
   pointer-events: none;
 }
 
+/* ===== 更新弹窗（TV 遥控器版）===== */
+.tv-settings-row.is-action { cursor: pointer; }
+.tv-app .app-update-notice {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  width: min(760px, 86vw);
+  max-height: 82vh;
+  padding: 40px 44px;
+  border: 1px solid var(--tv-hairline);
+  border-radius: 24px;
+  background: var(--tv-surface);
+  color: var(--tv-text);
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.66), 0 40px 90px rgba(0, 0, 0, 0.6);
+  z-index: 80;
+}
+
+.tv-app .app-update-notice h2 {
+  color: var(--tv-text);
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
+  padding-right: 40px;
+}
+
+.tv-app .app-update-notice p { color: var(--tv-text-2); font-size: 16px; line-height: 1.65; margin-bottom: 22px; }
+.tv-app .app-update-notice [role="alert"] { color: #ff8a80; }
+.tv-app .app-update-close { top: 18px; right: 18px; color: var(--tv-text-2); }
+.tv-app .app-update-progress { color: var(--tv-text-2); font-size: 15px; margin-bottom: 20px; }
+.tv-app .app-update-progress progress { background: var(--tv-surface-2); }
+.tv-app .app-update-progress progress::-webkit-progress-bar { background: var(--tv-surface-2); }
+.tv-app .app-update-progress progress::-webkit-progress-value { background: var(--tv-text); }
+.tv-app .app-update-actions { gap: 12px; }
+.tv-app .app-update-actions .btn {
+  min-height: 52px;
+  padding: 0 28px;
+  font-size: 16px;
+  border-radius: 14px;
+  background: var(--tv-surface-2);
+  color: var(--tv-text);
+  border: 1px solid var(--tv-hairline);
+  transition: background 140ms var(--tv-ease), box-shadow 140ms var(--tv-ease);
+}
+.tv-app .app-update-actions .btn-primary { background: var(--tv-text); color: #0a0a0b; border-color: transparent; }
+.tv-app .app-update-actions .btn.is-focus,
+.tv-app .app-update-actions .btn:focus-visible {
+  box-shadow: 0 0 0 3px #fff, 0 0 0 7px rgba(255, 255, 255, 0.18);
+  outline: none;
+}
+.tv-app .app-update-actions .btn:disabled { opacity: 0.45; box-shadow: none; }
+
 /* ===== 状态 ===== */
 .tv-hint-line {
   padding: 20px 4px;
@@ -806,4 +860,19 @@
   color: #fff;
   font-family: inherit;
   font-size: 13px;
+}
+
+/* ===== 手机竖屏适配：同一个 APK 在手机上也能点得动 ===== */
+@media (max-width: 820px) {
+  .tv-rail { width: 64px; }
+  .tv-brand-name, .tv-nav-item span, .tv-rail-foot { display: none; }
+  .tv-nav-item { justify-content: center; }
+  .tv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tv-episode-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .tv-sheet { width: 92vw; padding: 20px; gap: 18px; }
+  .tv-sheet-top { gap: 16px; }
+  .tv-sheet-art { width: 120px; }
+  .tv-sheet-title { font-size: 22px; }
+  .tv-app .app-update-notice { width: 92vw; padding: 24px; }
+  .tv-app .app-update-notice h2 { font-size: 22px; }
 }

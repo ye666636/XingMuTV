@@ -40,7 +40,7 @@ echo [4/4] 导出安装包
 copy /y "%BUILD_DIR%\app\build\outputs\apk\release\app-release.apk" "星幕剧场-TV.apk" >nul
 echo.
 echo 完成： %CD%\星幕剧场-TV.apk
-echo 电视上执行：adb install -r 星幕剧场-TV.apk   或拷贝到 U 盘用电视的安装器打开
+echo 电视/手机安装：adb install -r 星幕剧场-TV.apk   或拷到 U 盘、手机直接点开安装
 echo.
 pause
 exit /b 0
