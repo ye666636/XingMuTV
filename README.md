@@ -47,7 +47,7 @@ node scripts/make-icons.mjs             # 生成图标与电视横幅
 打包APK.bat                             # Windows 一键构建（需 JDK17 + Android SDK34 + Gradle 8.7）
 ```
 
-工程路径不能包含中文，打包脚本会自动把工程镜像到 ASCII 路径再交给 Gradle。签名私钥不入库，请自行 `keytool` 生成并修改 `android/app/build.gradle` 的签名配置。详见 `星幕剧场-安卓TV版说明.md`（仓库外分发文档）与 `android/app/src/main/java/` 内注释。
+工程路径不能包含中文，打包脚本会自动把工程镜像到 ASCII 路径再交给 Gradle。签名私钥不入库，请自行 `keytool` 生成并修改 `android/app/build.gradle` 的签名配置；缺少 keystore 时会自动退回 debug 签名，保证 clone 后能直接出包。详见 [`android/README.md`](android/README.md) 与 `android/app/src/main/java/` 内注释。
 
 **已知限制**：安卓版当前走官网公开通道，只能播每集约 10 秒的预览片；完整剧集需要移植 App 片源通道的签名与解密管线（桌面版已实现，安卓侧尚未完成）。播放器界面上会明确标注。
 
