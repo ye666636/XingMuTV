@@ -1,0 +1,21 @@
+// 星幕剧场 Android TV 版：Gradle 配置
+pluginManagement {
+  repositories {
+    maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+    maven { url 'https://maven.aliyun.com/repository/google' }
+    maven { url 'https://maven.aliyun.com/repository/public' }
+    google()
+    mavenCentral()
+  }
+}
+dependencyResolutionManagement {
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories {
+    maven { url 'https://maven.aliyun.com/repository/google' }
+    maven { url 'https://maven.aliyun.com/repository/public' }
+    google()
+    mavenCentral()
+  }
+}
+rootProject.name = 'xingmu-theater-tv'
+include ':app'

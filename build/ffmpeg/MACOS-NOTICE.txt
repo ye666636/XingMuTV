@@ -1,0 +1,52 @@
+FFmpeg / FFprobe for Apple Silicon and Intel macOS
+=================================================
+
+This application uses separately invoked, source-built FFmpeg 9.0.2 and FFprobe
+9.0.2 executables. Copyright (c) 2000-2026 the FFmpeg developers and respective
+library authors. Combined build license: GNU GPL version 3 or later.
+
+Only one external library is statically linked: x264, from the exact VideoLAN
+stable commit b35605ace3ddf7c1a5d67a2eb553f034aef41d55 (GPL version 2 or later).
+FFmpeg and x264 sources are unmodified. No nonfree configuration is enabled.
+The only dynamically linked components are macOS system libraries/frameworks.
+No Homebrew codec library is linked. Minimum system version: macOS 13.0.
+
+Exact source inputs:
+  https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
+  SHA256: 8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
+  https://code.videolan.org/videolan/x264.git
+  Commit: b35605ace3ddf7c1a5d67a2eb553f034aef41d55
+  Deterministic git archive tar + gzip -n SHA256:
+  4f1c35d11c7b09ca1a88affb914e1fc3daee888732786a66e51af4f786962c44
+
+Rebuild Apple Silicon: scripts/build-ffmpeg-source-mac.sh BUILD_DIRECTORY [JOBS].
+Rebuild Intel: scripts/build-ffmpeg-source-mac-x64.sh BUILD_DIRECTORY [JOBS].
+The Intel build disables external x86 assembly optimizations so no NASM tool
+is required. VideoToolbox and libx264 remain available; software encoding may
+be slower. Apple Silicon retains its existing assembly-optimized build.
+The corresponding-source archive accompanies the application's binary release:
+original source archives, exact build script, source manifest and license texts.
+The script verifies source hashes before compiling. It needs existing Apple
+Command Line Tools, make, git, curl and pkg-config; it installs no dependencies.
+It disables external-library autodetection and isolates pkg-config to the local
+x264 build prefix. Compilation writes only inside BUILD_DIRECTORY.
+
+Capabilities retained: local CENC decryption, H.264/HEVC/AAC decoding, MP4,
+VideoToolbox H.264 hardware encoding, libx264 software encoding, concat/copy,
+built-in audio/video conversion filters. Network protocols and device capture
+are disabled; the application handles network downloads itself. lavfi remains
+available for synthetic black-frame acceptance tests. No ffplay is shipped.
+
+License texts: MACOS-LICENSE.txt (GPLv3), MACOS-X264-LICENSE.txt (GPLv2).
+Additional upstream license texts and notices are in the corresponding source.
+FFmpeg retains its Independent JPEG Group (IJG) attribution and unmodified code.
+
+Executable hashes below are for the standalone build before application-package
+Developer ID signing, which changes Mach-O signature data and file hashes:
+  arm64 ffmpeg: 5778f11dcf417fbefc1912026159a31db157953078abd5d6fec5ba29dd91eb06
+  arm64 ffprobe: 0b13c76cad68528c12acd81e6e7672f929a0311e06847111a3079c8ac4046c22
+
+  x64 ffmpeg: 8cc5e0049793a3dbd72b9212105755f48148ee0f6db7592220866ff8213167b0
+  x64 ffprobe: ba2ed87fc3de54ee04a57d06aea5f78cdfdc714db2182dca3f6aecddb49f36c3
+
+The Windows FFmpeg build retains its own FFMPEG-NOTICE.txt.

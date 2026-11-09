@@ -1,0 +1,47 @@
+plugins { id 'com.android.application' }
+
+android {
+  namespace 'com.xingmu.theater'
+  compileSdk 34
+
+  defaultConfig {
+    applicationId 'com.xingmu.theater'
+    minSdk 21
+    targetSdk 34
+    versionCode 1
+    versionName '0.1.0'
+  }
+
+  // 开源仓库不含签名私钥。没有自己的 keystore 时自动退回 debug 签名，保证 clone 后能直接出包。
+  signingConfigs {
+    release {
+      if (file('keystore/xingmu.jks').exists()) {
+        storeFile file('keystore/xingmu.jks')
+        storePassword 'xingmu2026'
+        keyAlias 'xingmu'
+        keyPassword 'xingmu2026'
+      }
+    }
+  }
+
+  buildTypes {
+    release {
+      minifyEnabled false
+      signingConfig file('keystore/xingmu.jks').exists() ? signingConfigs.release : signingConfigs.debug
+    }
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  lint {
+    abortOnError false
+    checkReleaseBuilds false
+  }
+}
+
+// 不引入任何第三方依赖：播放用系统 MediaPlayer，网络用 HttpURLConnection，
+// 这样包体小、老电视也能跑，且 Gradle 只需要 AGP 本身。
+dependencies { }

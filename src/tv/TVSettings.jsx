@@ -1,0 +1,51 @@
+// 星幕剧场 TV 版：设置。遥控器操作说明与版本信息。
+import React, { useState, useEffect, useRef } from 'react';
+import { hoverAllowed } from './focusGuard';
+
+export default function TVSettings({ zoneActive, onRequestRail, appInfo }) {
+  const [index, setIndex] = useState(0);
+  const indexRef = useRef(0);
+  indexRef.current = index;
+
+  const rows = [
+    { id: 'shortcut', title: '遥控器操作', desc: '方向键移动 · 回车确认 · 返回键退出 · ↑ ↓ 切集' },
+    { id: 'version', title: '版本', desc: appInfo?.version ? `v${appInfo.version}` : 'v1.0.0' },
+    { id: 'about', title: '关于', desc: '星幕剧场 · 家庭大屏短剧播放器' },
+  ];
+
+  useEffect(() => {
+    if (!zoneActive) return undefined;
+    const onKeyDown = (event) => {
+      const { key } = event;
+      if (key === 'ArrowUp') { event.preventDefault(); if (indexRef.current === 0) onRequestRail?.(); else setIndex(i => i - 1); }
+      else if (key === 'ArrowDown') { event.preventDefault(); setIndex(i => Math.min(i + 1, rows.length - 1)); }
+      else if (key === 'ArrowLeft') { event.preventDefault(); onRequestRail?.(); }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoneActive, onRequestRail]);
+
+  return (
+    <div className="tv-page tv-settings">
+      <header className="tv-page-head">
+        <div>
+          <h1 className="tv-page-title">设置</h1>
+          <p className="tv-page-sub">操作说明与版本</p>
+        </div>
+      </header>
+      <ul className="tv-settings-list">
+        {rows.map((row, i) => (
+          <li
+            key={row.id}
+            className={`tv-settings-row ${zoneActive && index === i ? 'is-focus' : ''}`}
+            onMouseEnter={() => { if (!hoverAllowed()) return; setIndex(i); }}
+          >
+            <span className="tv-settings-title">{row.title}</span>
+            <span className="tv-settings-desc">{row.desc}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

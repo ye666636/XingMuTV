@@ -1,0 +1,809 @@
+/* 星幕剧场 TV 版样式
+   方向：安静的深石墨底色，海报本身承担全部颜色；强调色只用在一处（进度与选中）。
+   焦点：白色描边，像 Apple TV 的选中态。间距全部落在 8pt 栅格上。 */
+
+:root {
+  --tv-bg: #0a0a0b;
+  --tv-rail: #08080a;
+  --tv-surface: #141416;
+  --tv-surface-2: #1c1c1f;
+  --tv-surface-3: #232326;
+  --tv-hairline: rgba(255, 255, 255, 0.08);
+  --tv-hairline-strong: rgba(255, 255, 255, 0.16);
+  --tv-text: #f5f5f7;
+  --tv-text-2: #a1a1a6;
+  --tv-text-3: #6e6e73;
+  --tv-accent: #ff453a;
+  --tv-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.tv-app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  background: var(--tv-bg);
+  color: var(--tv-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+.tv-app button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* 全局 index.css 里有 h1/h2/h3 的颜色与字号，TV 版统一按自己的层级走 */
+.tv-app h1,
+.tv-app h2,
+.tv-app h3 {
+  color: var(--tv-text);
+}
+
+/* ===== 左侧导航 ===== */
+.tv-rail {
+  width: 232px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 16px 24px;
+  background: var(--tv-rail);
+  border-right: 1px solid var(--tv-hairline);
+}
+
+.tv-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 32px;
+}
+
+.tv-brand-mark {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--tv-surface-2);
+  border: 1px solid var(--tv-hairline);
+  color: var(--tv-text);
+}
+
+.tv-brand-mark svg { width: 18px; height: 18px; }
+
+.tv-brand-name {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tv-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tv-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--tv-text-2);
+  font-size: 15px;
+  text-align: left;
+  transition: background 160ms var(--tv-ease), color 160ms var(--tv-ease), transform 160ms var(--tv-ease);
+}
+
+.tv-nav-item svg { width: 20px; height: 20px; opacity: 0.9; }
+
+.tv-nav-item.is-current { color: var(--tv-text); background: rgba(255, 255, 255, 0.06); }
+
+.tv-nav-item.is-focus {
+  color: var(--tv-text);
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.01);
+}
+
+.tv-rail-foot {
+  margin-top: auto;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--tv-text-3);
+}
+
+/* ===== 内容区 ===== */
+.tv-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.tv-page {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 40px 56px 32px;
+  overflow: hidden;
+}
+
+.tv-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 28px;
+}
+
+.tv-page-head--stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.tv-page-title {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.12;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.tv-page-sub {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--tv-text-2);
+}
+
+/* 分段控件 */
+.tv-segmented {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tv-segment {
+  height: 34px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--tv-text-2);
+  font-size: 14px;
+  white-space: nowrap;
+  transition: background 160ms var(--tv-ease), color 160ms var(--tv-ease), transform 160ms var(--tv-ease);
+}
+
+.tv-segment.is-current { background: var(--tv-surface-3); color: var(--tv-text); }
+
+.tv-segment.is-focus {
+  color: var(--tv-text);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+/* ===== 海报墙 ===== */
+.tv-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 28px 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  align-content: start;
+  grid-auto-rows: max-content;
+  padding: 8px 4px 8px;
+  scrollbar-width: none;
+}
+
+.tv-grid::-webkit-scrollbar { display: none; }
+
+.tv-poster {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: center;
+  transition: transform 180ms var(--tv-ease);
+}
+
+.tv-poster-art {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--tv-surface-2);
+  box-shadow: 0 0 0 1px var(--tv-hairline);
+  transition: box-shadow 180ms var(--tv-ease), transform 180ms var(--tv-ease);
+}
+
+.tv-poster-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tv-poster-fallback {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--tv-text-3);
+}
+
+.tv-poster-name {
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--tv-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 160ms var(--tv-ease);
+}
+
+.tv-poster.is-focus { transform: translateY(-2px); }
+
+.tv-poster.is-focus .tv-poster-art {
+  box-shadow: 0 0 0 3px var(--tv-text), 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+
+.tv-poster.is-focus .tv-poster-name { color: var(--tv-text); }
+
+/* ===== 列表（观看记录 / 账号记录）===== */
+.tv-account-list {
+  flex: 1;
+  min-height: 0;
+  max-width: 960px;
+  margin: 0;
+  padding: 0 4px 24px;
+  list-style: none;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.tv-account-list::-webkit-scrollbar { display: none; }
+
+.tv-account-list li + li { margin-top: 4px; }
+
+.tv-list-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 10px 16px 10px 10px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--tv-text);
+  text-align: left;
+  transition: background 160ms var(--tv-ease), transform 160ms var(--tv-ease);
+}
+
+.tv-list-art {
+  width: 48px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--tv-surface-2);
+}
+
+.tv-list-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.tv-list-fallback {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--tv-text-3);
+}
+
+.tv-list-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tv-list-title {
+  font-size: 16px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-list-meta { font-size: 13px; color: var(--tv-text-3); }
+
+.tv-list-time { font-size: 13px; color: var(--tv-text-3); }
+
+.tv-list-row svg { color: var(--tv-text-3); }
+
+.tv-list-row.is-focus {
+  background: var(--tv-surface-2);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+.tv-list-row.is-focus svg { color: var(--tv-text); }
+
+/* ===== 按钮 ===== */
+.tv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--tv-text);
+  font-size: 15px;
+  font-weight: 500;
+  transition: transform 160ms var(--tv-ease), background 160ms var(--tv-ease), box-shadow 160ms var(--tv-ease);
+}
+
+.tv-btn--primary { background: var(--tv-text); color: #0a0a0b; }
+
+.tv-btn:disabled { opacity: 0.45; cursor: default; }
+
+.tv-btn.is-focus {
+  transform: scale(1.04);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9);
+}
+
+/* 列表底部的常驻分页行：固定在内容区底部，一眼可见 */
+.tv-more-row {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 66px;
+  margin-top: 6px;
+}
+
+.tv-more-btn {
+  height: 48px;
+  padding: 0 26px;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.tv-more-count {
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tv-more-btn.is-focus .tv-more-count { color: rgba(10, 10, 11, 0.6); }
+
+.tv-more-btn.is-focus { background: var(--tv-text); color: #0a0a0b; }
+
+.tv-more-end {
+  font-size: 13px;
+  color: var(--tv-text-3);
+}
+
+/* ===== 搜索 ===== */
+.tv-search-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 520px;
+  height: 52px;
+  padding: 0 18px;
+  border-radius: 14px;
+  background: var(--tv-surface);
+  box-shadow: inset 0 0 0 1px var(--tv-hairline);
+  transition: box-shadow 160ms var(--tv-ease);
+}
+
+.tv-search-field svg { color: var(--tv-text-3); flex-shrink: 0; }
+
+.tv-search-field input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--tv-text);
+  font-family: inherit;
+  font-size: 17px;
+  outline: none;
+}
+
+.tv-search-field input::placeholder { color: var(--tv-text-3); }
+
+.tv-search-field.is-focus { box-shadow: inset 0 0 0 1px transparent, 0 0 0 3px rgba(255, 255, 255, 0.85); }
+
+.tv-hotwords {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tv-hotword {
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--tv-text-2);
+  font-size: 14px;
+  transition: background 160ms var(--tv-ease), color 160ms var(--tv-ease), transform 160ms var(--tv-ease);
+}
+
+.tv-hotword.is-focus {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--tv-text);
+  transform: scale(1.04);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
+}
+
+/* ===== 账号 ===== */
+.tv-account-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.tv-account-status {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: var(--tv-text-2);
+}
+
+.tv-login-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 40px;
+}
+
+.tv-login-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 420px;
+  padding: 44px 40px;
+  border-radius: 22px;
+  background: var(--tv-surface);
+  box-shadow: inset 0 0 0 1px var(--tv-hairline);
+  text-align: center;
+}
+
+.tv-login-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: var(--tv-surface-2);
+  color: var(--tv-text-2);
+}
+
+.tv-login-title {
+  margin: 4px 0 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tv-login-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--tv-text-3);
+}
+
+.tv-login-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.tv-qr {
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.tv-qr img { width: 208px; height: 208px; display: block; }
+
+.tv-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 8px 0 12px;
+}
+
+.tv-section-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tv-section-head span { font-size: 13px; color: var(--tv-text-3); }
+
+/* ===== 设置 ===== */
+.tv-settings-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 720px;
+}
+
+.tv-settings-list li + li { margin-top: 4px; }
+
+.tv-settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: var(--tv-surface);
+  box-shadow: inset 0 0 0 1px var(--tv-hairline);
+  transition: background 160ms var(--tv-ease), transform 160ms var(--tv-ease);
+}
+
+.tv-settings-row.is-focus {
+  background: var(--tv-surface-2);
+  transform: translateX(2px);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.8);
+}
+
+.tv-settings-title { font-size: 16px; font-weight: 500; }
+
+.tv-settings-desc { font-size: 13px; color: var(--tv-text-3); }
+
+.tv-settings-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 28px;
+  font-size: 13px;
+  color: var(--tv-text-3);
+}
+
+.tv-settings-shortcuts kbd {
+  display: inline-block;
+  min-width: 24px;
+  margin-right: 6px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--tv-surface-2);
+  box-shadow: inset 0 0 0 1px var(--tv-hairline);
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--tv-text-2);
+  text-align: center;
+}
+
+/* ===== 详情页（sheet）===== */
+.tv-sheet-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.66);
+  backdrop-filter: blur(24px) saturate(120%);
+}
+
+.tv-sheet {
+  width: min(1120px, 92vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 36px;
+  border-radius: 22px;
+  background: var(--tv-surface);
+  box-shadow: 0 0 0 1px var(--tv-hairline), 0 40px 90px rgba(0, 0, 0, 0.6);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.tv-sheet::-webkit-scrollbar { display: none; }
+
+.tv-sheet-top {
+  display: flex;
+  gap: 32px;
+}
+
+.tv-sheet-art {
+  width: 200px;
+  flex-shrink: 0;
+  aspect-ratio: 3 / 4;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--tv-surface-2);
+  box-shadow: 0 0 0 1px var(--tv-hairline);
+}
+
+.tv-sheet-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.tv-sheet-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tv-sheet-title {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.tv-sheet-meta { margin: 0; font-size: 14px; color: var(--tv-text-2); }
+
+.tv-sheet-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--tv-text-3);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tv-play-action { margin-top: 8px; width: fit-content; }
+
+.tv-sheet-hint { margin: auto 0 0; font-size: 12px; color: var(--tv-text-3); }
+
+.tv-episode-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+  scrollbar-width: none;
+}
+
+.tv-episode-grid::-webkit-scrollbar { display: none; }
+
+.tv-episode {
+  height: 42px;
+  border: none;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--tv-text-2);
+  font-family: inherit;
+  font-size: 14px;
+  transition: background 140ms var(--tv-ease), color 140ms var(--tv-ease), transform 140ms var(--tv-ease);
+}
+
+.tv-episode.is-focus {
+  background: var(--tv-text);
+  color: #0a0a0b;
+  font-weight: 500;
+  transform: scale(1.06);
+}
+
+.tv-episode.is-locked { opacity: 0.32; cursor: default; }
+
+/* ===== 播放 ===== */
+.tv-player {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+
+.tv-app.is-playing .tv-rail { display: none; }
+
+.tv-player .player-episode-panel { display: none; }
+.tv-player .player-viewing-layout { grid-template-columns: minmax(0, 1fr) !important; }
+.tv-player .player-container { padding: 0 !important; }
+
+/* TV 播放：舞台铺满整个窗口，画面按原始比例完整显示。
+   竖屏短剧（1080×1920）以前被塞进 16:9 的 65vh 舞台，只会剩中间一条窄带，
+   或被「保持宽度」模式裁切放大；这里统一改成整窗 + contain，永不拉伸。 */
+.tv-player .player-stage,
+.tv-player .player-stage.player-window-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  max-height: none;
+  border-radius: 0;
+  background: #000;
+}
+
+.tv-player .player-video,
+.tv-player .player-transition-frame,
+.tv-player .video-enhancement-canvas {
+  object-fit: contain;
+  object-position: center;
+}
+
+/* 遥控器上不给「保持宽度」（会裁切放大），任何画面模式都按完整比例显示 */
+.tv-player .player-stage[data-picture-mode="width"] .player-video,
+.tv-player .player-stage[data-picture-mode="width"] .player-transition-frame,
+.tv-player .player-stage[data-picture-mode="width"] .video-enhancement-canvas {
+  position: absolute;
+  inset: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  transform: none;
+}
+
+.tv-player-hint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: 16px 24px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.68);
+  background: linear-gradient(rgba(0, 0, 0, 0.55), transparent);
+  pointer-events: none;
+}
+
+/* ===== 状态 ===== */
+.tv-hint-line {
+  padding: 20px 4px;
+  font-size: 14px;
+  color: var(--tv-text-3);
+}
+
+.tv-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(255, 69, 58, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 69, 58, 0.28);
+  color: #ffb4ad;
+  font-size: 14px;
+}
+
+.tv-banner-action {
+  height: 32px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+}
