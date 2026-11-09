@@ -41,6 +41,8 @@ env -u ELECTRON_RUN_AS_NODE npm run dev
 
 `android/` 是独立的 Android TV 工程：全屏 WebView 复用上面的 TV 界面，原生层负责网络请求、遥控器和播放（系统 MediaPlayer）。**minSdk 21（Android 5.0+）**，兼容老电视盒子，支持 Leanback 启动器。
 
+预览版安装包：[Releases · v0.1.0-tv-preview](https://github.com/ye666636/XingMuTV/releases/tag/v0.1.0-tv-preview)（约 1.1 MB，目前只能播每集约 10 秒的预览片，详见下方「已知限制」）。
+
 ```bash
 node scripts/build-android-assets.mjs   # 生成网页资源 + 桥接脚本
 node scripts/make-icons.mjs             # 生成图标与电视横幅
