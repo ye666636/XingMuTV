@@ -8,8 +8,8 @@ android {
     applicationId 'com.xingmu.theater'
     minSdk 21
     targetSdk 34
-    versionCode 3
-    versionName '1.0.2'
+    versionCode 4
+    versionName '1.0.3'
   }
 
   // 开源仓库不含签名私钥。没有自己的 keystore 时自动退回 debug 签名，保证 clone 后能直接出包。

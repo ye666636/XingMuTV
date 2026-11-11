@@ -49,8 +49,53 @@ window.__xmHttp = (id, status, body) => {
   const entry = pending.get(id);
   if (!entry) return;
   pending.delete(id);
-  if (status >= 200 && status < 400) entry.resolve(body);
-  else entry.reject(new Error(`请求失败（HTTP ${status}）`));
+  if (status >= 200 && status < 400) {
+    entry.resolve(body);
+    return;
+  }
+  // Java 层把真实异常写成 {"error": "..."}，以前被丢掉，界面只显示「请求失败（HTTP 0）」，
+  // 用户根本不知道是 DNS、TLS 还是设备时间的问题。这里透传并翻译成中文提示。
+  let message = `请求失败（HTTP ${status}）`;
+  try {
+    const parsed = JSON.parse(body);
+    if (parsed && parsed.error) message = String(parsed.error);
+  } catch (_) { /* 非 JSON 错误体保留默认文案 */ }
+  entry.reject(new Error(message));
+};
+
+// 设置页「网络诊断」的回显卡片：结果直接画在电视上，方便拍照反馈。
+window.__xmDiagnose = (_id, payload) => {
+  let lines;
+  try { lines = JSON.parse(payload); } catch (_) { lines = [String(payload)]; }
+  if (!Array.isArray(lines)) lines = [String(lines)];
+  let box = document.getElementById('xm-diagnose');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'xm-diagnose';
+    box.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.92);' +
+      'display:flex;align-items:center;justify-content:center;padding:40px;box-sizing:border-box;';
+    const card = document.createElement('div');
+    card.style.cssText = 'max-width:1400px;width:100%;background:#1c1c1e;border:1px solid #3a3a3c;' +
+      'border-radius:16px;padding:32px;color:#f5f5f7;font:22px/1.8 -apple-system,"PingFang SC",sans-serif;' +
+      'word-break:break-all;';
+    box.appendChild(card);
+    box.addEventListener('click', () => { if (box.parentNode) box.parentNode.removeChild(box); });
+    document.body.appendChild(box);
+  }
+  const card = box.firstChild;
+  while (card.firstChild) card.removeChild(card.firstChild);
+  lines.forEach((line, i) => {
+    const row = document.createElement('div');
+    row.textContent = String(line);
+    row.style.cssText = i === 0
+      ? 'font-size:30px;font-weight:600;margin-bottom:20px;color:#7ddb95;'
+      : 'padding:5px 0;border-bottom:1px solid #2c2c2e;';
+    card.appendChild(row);
+  });
+  const hint = document.createElement('div');
+  hint.textContent = '点击任意处 / 按返回键关闭';
+  hint.style.cssText = 'margin-top:22px;font-size:18px;color:#8e8e93;';
+  card.appendChild(hint);
 };
 
 function httpGet(url, extra = {}) {
@@ -188,6 +233,10 @@ async function searchAt(keyword, page) {
 const electronAPI = {
   isAndroid: true,
   getAppInfo: async () => ({ version: window.XM.version(), platform: 'android' }),
+  diagnoseNetwork: async () => {
+    if (typeof window.XM.diagnose === 'function') window.XM.diagnose(1);
+    return { success: true };
+  },
   browseCategories: async () => CATEGORIES,
   browseList: async (options) => {
     try { return await browseList(options); }
@@ -285,6 +334,11 @@ if (window.XM && !window.electronAPI) {
   // 遥控器返回键：先让界面按自己的规则处理（关弹窗 / 退出播放页 / 回导航栏），
   // 只有停在首页且没有浮层时才允许原生退出应用。
   window.__xmBack = () => {
+    const diagnoseBox = document.getElementById('xm-diagnose');
+    if (diagnoseBox && diagnoseBox.parentNode) {
+      diagnoseBox.parentNode.removeChild(diagnoseBox);
+      return 'handled';
+    }
     // 详情页没有独立关闭按钮，靠点遮罩 / Escape 关。Chromium 44 的
     // KeyboardEvent 构造器不认 { key }，所以优先直接点遮罩最稳。
     const mask = document.querySelector('.tv-sheet-mask');

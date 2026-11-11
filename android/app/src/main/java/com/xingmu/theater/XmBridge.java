@@ -5,6 +5,8 @@ import android.app.UiModeManager;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
@@ -12,6 +14,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -19,11 +22,19 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import javax.net.ssl.HttpsURLConnection;
 
 /**
  * WebView 与原生之间的桥：发 HTTP、起播放器、下载安装新版 APK、报版本。
@@ -65,34 +76,100 @@ public class XmBridge {
         activity.runOnUiThread(() -> Toast.makeText(activity, message, Toast.LENGTH_SHORT).show());
     }
 
-    /** 发起一次 GET；完成后调用 window.__xmHttp(id, status, body)。 */
+    /** 统一配置 HTTPS（老电视强制 TLS 1.2 + 内置根证书），并设置请求头。 */
+    private HttpURLConnection open(String url, String headersJson) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        if (connection instanceof HttpsURLConnection) {
+            javax.net.ssl.SSLSocketFactory factory = TlsCompat.get(activity);
+            if (factory != null) ((HttpsURLConnection) connection).setSSLSocketFactory(factory);
+        }
+        connection.setInstanceFollowRedirects(true);
+        connection.setConnectTimeout(12000);
+        connection.setReadTimeout(18000);
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9");
+        if (headersJson != null && !headersJson.isEmpty()) {
+            JSONObject headers = new JSONObject(headersJson);
+            Iterator<String> keys = headers.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                connection.setRequestProperty(key, headers.optString(key));
+            }
+        }
+        return connection;
+    }
+
+    private String deviceTime() {
+        try {
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA).format(new Date());
+        } catch (Exception error) {
+            return String.valueOf(System.currentTimeMillis());
+        }
+    }
+
+    private String networkSummary() {
+        try {
+            ConnectivityManager manager =
+                    (ConnectivityManager) activity.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo info = manager == null ? null : manager.getActiveNetworkInfo();
+            if (info == null) return "网络：无活动连接";
+            return "网络：" + info.getTypeName() + (info.isConnected() ? "已连接" : "未连接");
+        } catch (Exception error) {
+            return "网络：状态未知";
+        }
+    }
+
+    /** 把 Java 异常翻成电视上能看懂的中文，并附上设备时间/网络状态，方便直接拍屏定位。 */
+    private String describeFailure(Exception error) {
+        String type = error.getClass().getSimpleName();
+        String raw = String.valueOf(error.getMessage());
+        String lower = (type + " " + raw).toLowerCase(Locale.US);
+        String hint;
+        if (lower.contains("notyetvalid") || lower.contains("expired") || lower.contains("not valid")) {
+            hint = "电视系统日期时间不对，请到「设置 → 日期时间」校对后重试（证书有效期校验失败）";
+        } else if (lower.contains("trust anchor") || lower.contains("certpath") || lower.contains("certificate") && lower.contains("unknown")) {
+            hint = "证书不被信任：系统根证书过旧或设备时间不对（本版已内置官网根证书）";
+        } else if (lower.contains("sslhandshake") || lower.contains("sslprotocol") || lower.contains("protocol")) {
+            hint = "TLS 握手失败：官网只支持 TLS 1.2（本版已强制启用，仍失败请校对电视时间）";
+        } else if (lower.contains("unknownhost")) {
+            hint = "DNS 解析失败：检查电视网络，或把 DNS 改为 223.5.5.5 / 114.114.114.114";
+        } else if (lower.contains("timeout") || lower.contains("timed out")) {
+            hint = "连接超时：检查电视 Wi-Fi / 网线是否正常联网";
+        } else if (lower.contains("refused") || lower.contains("failed to connect") || lower.contains("unreachable")) {
+            hint = "连不上服务器：检查电视网络是否被路由器隔离或需要网页认证";
+        } else {
+            hint = "网络请求失败，请检查电视网络";
+        }
+        return hint + "｜" + type + ": " + raw + "｜设备时间 " + deviceTime() + "｜" + networkSummary();
+    }
+
+    /** 发起一次 GET；完成后调用 window.__xmHttp(id, status, body)。失败带真实原因。 */
     @JavascriptInterface
     public void http(final String url, final String headersJson, final int callbackId) {
         pool.execute(() -> {
             int status = 0;
             String body = "";
-            try {
-                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-                connection.setInstanceFollowRedirects(true);
-                connection.setConnectTimeout(12000);
-                connection.setReadTimeout(18000);
-                connection.setRequestMethod("GET");
-                connection.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9");
-                if (headersJson != null && !headersJson.isEmpty()) {
-                    JSONObject headers = new JSONObject(headersJson);
-                    Iterator<String> keys = headers.keys();
-                    while (keys.hasNext()) {
-                        String key = keys.next();
-                        connection.setRequestProperty(key, headers.optString(key));
+            Exception failure = null;
+            // 网络抖动时重试一次，老电视 WiFi 偶发丢包很常见。
+            for (int attempt = 0; attempt < 2; attempt++) {
+                try {
+                    HttpURLConnection connection = open(url, headersJson);
+                    status = connection.getResponseCode();
+                    InputStream stream = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
+                    body = readAll(stream);
+                    connection.disconnect();
+                    failure = null;
+                    break;
+                } catch (Exception error) {
+                    failure = error;
+                    status = 0;
+                    if (attempt == 0) {
+                        try { Thread.sleep(400); } catch (InterruptedException ignored) { }
                     }
                 }
-                status = connection.getResponseCode();
-                InputStream stream = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
-                body = readAll(stream);
-                connection.disconnect();
-            } catch (Exception error) {
-                status = 0;
-                body = "{\"error\":" + JSONObject.quote(String.valueOf(error.getMessage())) + "}";
+            }
+            if (failure != null) {
+                body = "{\"error\":" + JSONObject.quote(describeFailure(failure)) + "}";
             }
             final int finalStatus = status;
             final String finalBody = body;
@@ -100,6 +177,44 @@ public class XmBridge {
                 if (webView == null) return;
                 String js = "window.__xmHttp(" + callbackId + "," + finalStatus + "," + JSONObject.quote(finalBody) + ")";
                 webView.evaluateJavascript(js, null);
+            });
+        });
+    }
+
+    /** 设置页「网络诊断」：逐项检测并把结果直接显示到电视屏幕上，方便拍屏反馈。 */
+    @JavascriptInterface
+    public void diagnose(final int callbackId) {
+        pool.execute(() -> {
+            JSONArray lines = new JSONArray();
+            lines.put("星幕剧场 网络诊断  v" + version());
+            lines.put("① 设备时间：" + deviceTime());
+            lines.put("② " + networkSummary());
+            try {
+                InetAddress address = InetAddress.getByName("hongguoduanju.com");
+                lines.put("③ DNS 解析：OK → " + address.getHostAddress());
+            } catch (Exception error) {
+                lines.put("③ DNS 解析：失败 → " + error.getClass().getSimpleName() + " " + error.getMessage());
+            }
+            try (Socket socket = new Socket()) {
+                socket.connect(new InetSocketAddress("hongguoduanju.com", 443), 8000);
+                lines.put("④ TCP 443 连接：OK");
+            } catch (Exception error) {
+                lines.put("④ TCP 443 连接：失败 → " + error.getClass().getSimpleName() + " " + error.getMessage());
+            }
+            try {
+                HttpURLConnection connection = open("https://hongguoduanju.com/category/real-drama", "");
+                int code = connection.getResponseCode();
+                connection.disconnect();
+                lines.put("⑤ HTTPS 请求（TLS1.2+内置根证书）：HTTP " + code);
+            } catch (Exception error) {
+                lines.put("⑤ HTTPS 请求：失败 → " + error.getClass().getSimpleName() + " " + error.getMessage());
+            }
+            lines.put(TlsCompat.get(activity) != null ? "⑥ TLS 兼容层：已启用（TLS 1.2 + DigiCert G2 根）" : "⑥ TLS 兼容层：构建失败，使用系统默认");
+            lines.put("把这一屏拍给开发者即可定位；按返回键或点击任意处关闭。");
+            final String payload = lines.toString();
+            activity.runOnUiThread(() -> {
+                if (webView == null) return;
+                webView.evaluateJavascript("window.__xmDiagnose(" + callbackId + "," + JSONObject.quote(payload) + ")", null);
             });
         });
     }
@@ -167,6 +282,10 @@ public class XmBridge {
             File temp = new File(dir, "XingMuTV-" + safe + ".apk.part");
             try {
                 HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                if (connection instanceof HttpsURLConnection) {
+                    javax.net.ssl.SSLSocketFactory factory = TlsCompat.get(activity);
+                    if (factory != null) ((HttpsURLConnection) connection).setSSLSocketFactory(factory);
+                }
                 connection.setInstanceFollowRedirects(true);
                 connection.setConnectTimeout(15000);
                 connection.setReadTimeout(30000);
