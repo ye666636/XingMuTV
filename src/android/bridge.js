@@ -72,7 +72,8 @@ window.__xmDiagnose = (_id, payload) => {
   if (!box) {
     box = document.createElement('div');
     box.id = 'xm-diagnose';
-    box.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.92);' +
+    // 老内核不认 inset，必须写全四个方向，否则卡片会变成 0 尺寸（DOM 里有、屏幕上看不见）。
+    box.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;background:rgba(0,0,0,.92);' +
       'display:flex;align-items:center;justify-content:center;padding:40px;box-sizing:border-box;';
     const card = document.createElement('div');
     card.style.cssText = 'max-width:1400px;width:100%;background:#1c1c1e;border:1px solid #3a3a3c;' +
