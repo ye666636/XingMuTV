@@ -116,3 +116,17 @@ scripts/                        资源与图标构建脚本
 ## 免责
 
 仓库不含任何账号凭据、签名私钥或代理密码。二进制发行时请按 GPLv3 第 6 条一并提供对应完整源码。
+
+## 老电视兼容（v1.0.2 起）
+
+很多电视盒子的系统 WebView 停留在 Chromium 44~55（例如小米电视 4C 的 Android 6.0）。
+v1.0.1 用现代浏览器产物打包，在这类设备上会白屏；v1.0.2 的构建链已改为：
+
+- ES module → 单个普通 IIFE 脚本，语法经 esbuild + Babel 降到 ES5
+- `polyfills.js` 补齐 `Object.assign/entries`、`matchAll`、`at`、DOM 集合迭代器等
+- CSS 变量静态展开、`inset` / `aspect-ratio` 降级、Grid 加 flex 兜底
+- 构建期消除 BigInt 字面量与动态 `import()`（Chrome 44 解析期就会报错）
+- 页面内置可见错误层，加载失败时直接显示原因而不是白屏
+
+已在 **Android 6.0 / Chromium 44** 模拟器上实测：首页 24 部、详情选集、翻页、遥控器返回键全部正常。
+构建请务必走 `scripts/build-android-assets.mjs`，不要直接复制 `dist-react`。

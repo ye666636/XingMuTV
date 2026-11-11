@@ -15,10 +15,8 @@ android/app/build/
 *.jks
 *.keystore
 
-# 由 scripts/build-android-assets.mjs 生成的 assets，不重复入库
-android/app/src/main/assets/assets/
-android/app/src/main/assets/bridge.js
-android/app/src/main/assets/index.html
+# WebView 资源全部由 scripts/build-android-assets.mjs 生成（含 ES5 转译产物），不重复入库
+android/app/src/main/assets/
 
 # 本机联调脚本（含绝对路径，不进公开仓库）
 scripts/_*.py

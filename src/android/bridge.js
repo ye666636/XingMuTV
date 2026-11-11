@@ -285,8 +285,19 @@ if (window.XM && !window.electronAPI) {
   // 遥控器返回键：先让界面按自己的规则处理（关弹窗 / 退出播放页 / 回导航栏），
   // 只有停在首页且没有浮层时才允许原生退出应用。
   window.__xmBack = () => {
+    // 详情页没有独立关闭按钮，靠点遮罩 / Escape 关。Chromium 44 的
+    // KeyboardEvent 构造器不认 { key }，所以优先直接点遮罩最稳。
+    const mask = document.querySelector('.tv-sheet-mask');
+    if (mask) {
+      mask.click();
+      return 'handled';
+    }
     try {
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      const ev = document.createEvent('Event');
+      ev.initEvent('keydown', true, true);
+      try { Object.defineProperty(ev, 'key', { value: 'Escape' }); }
+      catch (_) { try { ev.key = 'Escape'; } catch (ignored) {} }
+      window.dispatchEvent(ev);
     } catch (_) { /* 老 WebView 不支持构造事件时按未处理算 */ }
     const title = document.querySelector('.tv-page-title');
     const onHome = title && title.textContent.trim() === '发现';

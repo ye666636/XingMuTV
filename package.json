@@ -1,6 +1,6 @@
 {
   "name": "xingmu-theater",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "星幕剧场 · 安卓电视 / 手机短剧播放器（APK，个人二次开发版）",
   "license": "GPL-3.0",
@@ -16,6 +16,8 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.24.0",
     "@vitejs/plugin-react": "^4.3.4",
     "esbuild": "0.21.5",
     "vite": "^5.4.11"

@@ -1,57 +1,77 @@
-# 星幕剧场 · 安卓电视版（APK）
+# 星幕剧场 · 电视版 APK v1.0.2
 
-发行包：约 1.1 MB 的 APK（minSdk 21 / Android 5.0+，arm64 与 armeabi-v7a 通用），支持电视 Leanback 启动器。同一个包也能装在安卓手机上。可自行按下方步骤构建，或从本仓库 Releases 下载。
+约 1.1 MB，minSdk 21（Android 5.0+），arm64 / armeabi-v7a 通用，带 Leanback 电视横幅。同一个包也能装在安卓手机上。
 
-## 怎么装到电视上
+**v1.0.2 专门修了老电视白屏**：在 Android 6.0 / Chromium 44 内核（小米电视 4C 同代）的真实模拟器上已验证通过——首页 24 部片单与 24 张封面、详情 63 集、翻页 24→48、遥控器返回键全部正常，零 JS 报错。
 
-**方式一：U 盘**
-1. 把 `星幕剧场-TV-v0.1.0.apk` 拷到 U 盘
-2. 电视插 U 盘 → 打开「文件管理 / 媒体管理器」找到这个文件 → 点安装
-3. 第一次会提示「禁止安装未知来源应用」，去「设置 → 安全 → 允许安装未知来源」打开后重试
+---
 
-**方式二：ADB（电视开了开发者调试）**
+## 装到电视上（小米电视 4C 这类老机型看这里）
+
+**U 盘安装最容易踩的 3 个坑**：
+
+1. **先开权限**：电视「设置 → 账号与安全」，把 **「安装未知来源的应用」** 和 **「米联安全」** 都设为允许。
+2. **别只用桌面上的「文件管理」**：它通常只列视频/图片，APK 不显示。正确入口是 **「高清播放器」→「设备」→「移动存储设备」**，进去才能看到 U 盘里的 APK；插上 U 盘后弹出的安装提示也可以直接用。
+3. **U 盘格式与文件名**：老电视对 NTFS / exFAT 支持不稳，建议格式化成 **FAT32**；把 APK 文件名改成纯英文，例如 `XingMuTV.apk`（中文文件名有些电视不列出）。
+
+**ADB 安装**（电视开了开发者调试）：
+
 ```
 adb connect 电视IP:5555
-adb install -r 星幕剧场-TV-v0.1.0.apk
+adb install -r XingMuTV-v1.0.2.apk
 ```
-装好后在电视桌面「我的应用」里能看到「星幕剧场」横幅。
+
+装好后在电视「我的应用」里能看到「星幕剧场」横幅。若之前装过 v1.0.1，直接覆盖安装即可（同一签名）。
+
+---
 
 ## 遥控器操作
 
 | 按键 | 作用 |
 | --- | --- |
-| 方向键 | 移动焦点（左侧导航 ⇄ 片单 ⇄ 分类 / 选集格子） |
-| 确定键 | 打开剧集详情 / 播放 / 播放器里播放-暂停 |
-| 返回键 | 关详情 → 回首页 → 再按一次退出应用 |
+| 方向键 | 移动焦点（左侧导航 ⇄ 分类 ⇄ 海报 ⇄ 选集格子） |
+| 确定键 | 打开详情 / 播放 / 播放器里播放-暂停 |
+| 返回键 | 关详情 → 回首页 → 再按一次退出 |
 | 播放器：左右 | 快退 / 快进 10 秒 |
-| 播放器：上下 | 快进 60 秒 / 快退 60 秒 |
+| 播放器：上下 | 快退 / 快进 60 秒 |
 
-## 这一版做了什么
+设置页有「检查更新」；应用启动即查、之后每 5 分钟轮询 GitHub Releases，发现新版可下载并调起系统安装器。
 
-- 全屏 WebView 承载「星幕剧场」TV 界面，遥控器焦点、选集、分页都在
-- 原生网络层（Java HttpURLConnection）：首页片单、分类热播榜、搜索（含翻页）、剧集详情与分集全部走红果官网真实数据，绕开 WebView 的跨域限制
-- 原生播放器（MediaPlayer + SurfaceView）：解析官网 `VideoObject` 直链，按原始比例播放，不拉伸不变形
-- 观看记录记在本地（本机 60 条），首页/搜索/详情/播放全链路已在 1080p 安卓电视模拟器上跑通
+---
 
-## 已知限制（重要）
+## 这次修了什么（v1.0.1 → v1.0.2）
 
-1. **只能播约 10 秒预览片。** 官网公开通道（网页端）对每集只放出 10 秒预览 mp4；完整剧集需要移植红果 App 通道的签名接口与 CENC 解密管线，目前尚未完成。播放器界面会明确标注这一限制。
-2. **没有账号扫码登录。** 账号页会显示「电视版暂不支持红果账号扫码登录」，APP 观看记录同步也还没接。
+老电视的系统 WebView 常年停在 Chromium 44~55，而 v1.0.1 是按现代浏览器编译的，所以一打开就是白屏。逐个修掉：
+
+| 问题 | 修复 |
+| --- | --- |
+| `<script type="module">` 老内核完全忽略 | esbuild 打成单个普通 IIFE 脚本 |
+| `?.`、`??`、箭头函数、`let/const`、解构、`async` 语法错误 | esbuild(ES2015) + Babel preset-env 转 ES5 |
+| `Object.assign` / `entries` / `matchAll` / `at` / `includes` 等 API 缺失 | 新增 ES5 `polyfills.js`，最先加载 |
+| BigInt 字面量 `0n`、动态 `import()` 在解析期就报错 | 构建期消除（TV 端播放走原生播放器，用不到） |
+| CSS `var()`、`inset`、`aspect-ratio`、Grid、flex `gap` 不支持 | 变量静态展开、`inset` 展开、海报改等比 padding、Grid 加 flex 兜底 |
+| Babel 的 for-of 辅助函数在老 DOM 集合上抛错 | 放宽「有 length 就按数组遍历」+ 给 DOM 集合补迭代器 |
+| 返回键关不掉详情 | 桥接层改点遮罩 + 补合成事件的 `key` |
+
+另外加了**可见错误层**：以后万一再出加载错误，屏幕和 logcat 会直接写出原因，不再是一片白屏。
+
+---
+
+## 已知限制
+
+1. **只能播约 10 秒预览片。** 官网公开通道对每集只放出 10 秒预览 mp4；完整剧集需要移植红果 App 通道的签名接口与 CENC 解密管线，尚未完成。播放器界面会明确标注这一点。
+2. **没有账号扫码登录**，APP 观看记录同步也还没接。
 3. 未做下载/离线缓存、弹幕、画质切换（官网预览通道只有 360p）。
 
-## 怎么重新打包
+## 自己构建
 
-Windows 下双击项目根目录的 `打包APK.bat`，或在命令行跑：
+Windows 下双击项目根目录的 `打包APK.bat`，或：
 
 ```
-node scripts/build-android-assets.mjs   # 构建网页 + 桥接脚本 → android/app/src/main/assets
+node scripts/build-android-assets.mjs   # Vite → IIFE + ES5 转译 → CSS 降级 → 注入 polyfill
 node scripts/make-icons.mjs             # 生成应用图标与电视横幅
 ```
 
-技术栈约定（便于后续维护）：
+构建脚本会自动完成整套兼容处理，**不要直接把 `dist-react` 拷进 `assets`**。
 
-- `android/` 安卓工程，Java，无第三方依赖（AGP 8.4.2 + Gradle 8.7，JDK 17，SDK 34）
-- `src/android/parsers.js` 官网解析器（解析规则与上游一致，纯字符串/JSON 解析）
-- `src/android/bridge.js` WebView 侧 `window.electronAPI` 适配层，编译成 `assets/bridge.js` 注入 index.html
-- `LocalServer.java` 在 127.0.0.1 起本地静态服务，避免 `file://` 下 ES module / localStorage 被拦导致白屏
-- 工程路径不能含中文，构建脚本会自动镜像到 `D:\AndroidBuild\xmbuild` 再交给 Gradle
+技术栈：Java + WebView + 系统 MediaPlayer，无第三方依赖（AGP 8.4.2 / Gradle 8.7 / JDK 17 / SDK 34）。`src/android/parsers.js` 是官网解析器，`src/android/bridge.js` 是 `window.electronAPI` 适配层，`LocalServer.java` 在 127.0.0.1 起本地静态服务避免 `file://` 的 origin 限制。工程路径不能含中文，脚本会镜像到 `D:\AndroidBuild\xmbuild` 再交给 Gradle。
